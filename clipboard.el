@@ -1,12 +1,40 @@
-;;; Copy the following code to your init.el !
+;;; Just copy the following into your init.el !
 
+;;; Emacs in console on Mac
 (defun yank-from-mac-clipboard ()
   (interactive)
   (set-mark (point))
   (insert (shell-command-to-string "pbpaste")))
-(defun kill-region-into-mac-clipboard ()
-  (interactive)
-  (shell-command-on-region (mark) (point) "pbcopy")
-  (kill-region (mark) (point)))
+(defun kill-region-into-mac-clipboard (from to)
+  (interactive "r")
+  (shell-command-on-region from to "pbcopy")
+  (kill-region from to))
+(defun copy-region-into-mac-clipboard (from to)
+  (interactive "r")
+  (kill-region-into-mac-clipboard from to)
+  (yank))
 (global-set-key "\C-c\C-y" 'yank-from-mac-clipboard)
 (global-set-key "\C-c\C-w" 'kill-region-into-mac-clipboard)
+
+;;; Excel
+(defun copy-region-for-hougansi (from to)
+  (interactive "r")
+  (save-excursion
+    (save-restriction
+      (narrow-to-region from to)
+      (copy-region-as-kill (point-min) (point-max))
+      (goto-char (point-min))
+      (forward-char 1)
+      (while (< (point) (point-max))
+        (unless (looking-at "[\n\r\t]")
+          (insert "\t")
+          (when (looking-at "[\"]")
+            (delete-char 1)
+            (insert "'")
+            (backward-char 1)))
+        (forward-char 1))
+      (if (fboundp 'kill-region-into-mac-clipboard)
+          (kill-region-into-mac-clipboard (point-min) (point-max))
+        (kill-region (point-min) (point-max)))))
+  (yank 2))
+(global-set-key "\C-c\M-\C-w" 'copy-region-for-hougansi)
