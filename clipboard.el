@@ -16,7 +16,7 @@
 (global-set-key "\C-c\C-y" 'yank-from-mac-clipboard)
 (global-set-key "\C-c\C-w" 'kill-region-into-mac-clipboard)
 
-;;; Excel
+;;; Excel-方眼紙
 (defun copy-region-for-hougansi (from to)
   (interactive "r")
   (save-excursion
