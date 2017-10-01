@@ -1,6 +1,6 @@
 # Functions for clipboard in Emacs on Mac
 
-This software provides some functions in Emacs on Mac.
+This software provides some functions reading and writing clipboard in Emacs on Mac.
 
 ## Quick Start
 
