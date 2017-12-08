@@ -66,3 +66,64 @@ a tab-separated list of characters."
     (message "%d lines x %d cells" row col)))
 
 (global-set-key "\C-c\M-\C-w" 'copy-region-for-hougansi)
+
+;;; character-lined tables
+
+(defun copy-table-in-region (from to)
+  "A table written in the region is send to the clipboard as
+tab-separated values."
+  (interactive "r")
+  (let ((row 1) (col 1) (candy 1))
+    (save-excursion
+      (save-restriction
+        (narrow-to-region from to)
+        (copy-region-as-kill (point-min) (point-max))
+        (goto-char (point-min))
+        (while (re-search-forward "[\t]" nil t)
+          (replace-match " " t t))
+        (goto-char (point-min))
+        (while (re-search-forward "[ ]+$" nil t)
+          (replace-match "" t t))
+        (goto-char (point-max))
+        (while (re-search-backward "^[ ]+" nil t)
+          (replace-match "" t t))
+        (goto-char (point-min))
+        (while (re-search-forward "[ ]*|$" nil t)
+          (replace-match "" t t))
+        (goto-char (point-max))
+        (while (re-search-backward "^|[ ]*" nil t)
+          (replace-match "" t t))
+        (goto-char (point-min))
+        (while (re-search-forward "^[-|]+$" nil t)
+          (replace-match "" t t))
+        (goto-char (point-min))
+        (while (re-search-forward "[ ]*|[ ]*" nil t)
+          (replace-match "\t" t t))
+        (goto-char (point-min))
+        (while (< (point) (point-max))
+          (when (looking-at "[\t]")
+            (setq candy (+ candy 1)))
+          (when (looking-at "[\n]")
+            (setq row (+ row 1))
+            (setq col (if (< col candy) candy col))
+            (setq candy 1))
+          (forward-char 1))
+        (setq col (if (< col candy) candy col))
+        (if (fboundp 'kill-region-into-mac-clipboard)
+            (kill-region-into-mac-clipboard (point-min) (point-max))
+          (kill-region (point-min) (point-max)))))
+    (yank 2)
+    (message "%d lines x %d cells" row col)))
+
+(defun paste-table ()
+  "Insert the table created from killed tab-separated values."
+  (interactive)
+  (if (fboundp 'yank-from-mac-clipboard)
+      (yank-from-mac-clipboard)
+    (yank))
+  (save-excursion
+    (save-restriction
+      (narrow-to-region (mark) (point))
+      (goto-char (point-min))
+      (while (re-search-forward "[\t]" nil t)
+        (replace-match "\t| " t t)))))
