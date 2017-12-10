@@ -29,15 +29,15 @@ Terminal."
 
 ;;; Excel-方眼紙
 
-(defun copy-region-for-hougansi (from to)
-  "Text in the region is saved in the clipboard and converted to
-a tab-separated list of characters."
+(defun kill-region-for-hougansi (from to)
+  "Kill the region and convert it to a tab-separated list of
+characters."
   (interactive "r")
+  (copy-region-as-kill from to)
   (let ((row 1) (col 1) (candy 1))
     (save-excursion
       (save-restriction
         (narrow-to-region from to)
-        (copy-region-as-kill (point-min) (point-max))
         (goto-char (point-min))
         (while (looking-at "[\n\r\t]") (forward-char 1))
         (while (< (point) (- (point-max) 1))
@@ -62,22 +62,21 @@ a tab-separated list of characters."
         (if (fboundp 'kill-region-into-mac-clipboard)
             (kill-region-into-mac-clipboard (point-min) (point-max))
           (kill-region (point-min) (point-max)))))
-    (yank 2)
     (message "%d lines x %d cells" row col)))
 
-(global-set-key "\C-c\M-\C-w" 'copy-region-for-hougansi)
+(global-set-key "\C-c\M-\C-w" 'kill-region-for-hougansi)
 
-;;; character-lined tables
+;;; character-based tables
 
-(defun copy-table-in-region (from to)
-  "A table written in the region is send to the clipboard as
+(defun cut-cli-table-in-region (from to)
+  "A table written in the region is cut into the kill ring as
 tab-separated values."
   (interactive "r")
+  (copy-region-as-kill from to)
   (let ((row 1) (col 1) (candy 1))
     (save-excursion
       (save-restriction
         (narrow-to-region from to)
-        (copy-region-as-kill (point-min) (point-max))
         (goto-char (point-min))
         (while (re-search-forward "[\t]" nil t)
           (replace-match " " t t))
@@ -94,7 +93,7 @@ tab-separated values."
         (while (re-search-backward "^|[ ]*" nil t)
           (replace-match "" t t))
         (goto-char (point-min))
-        (while (re-search-forward "^[-|]+$" nil t)
+        (while (re-search-forward "^[-|+]+$" nil t)
           (replace-match "" t t))
         (goto-char (point-min))
         (while (re-search-forward "[ ]*|[ ]*" nil t)
@@ -112,10 +111,9 @@ tab-separated values."
         (if (fboundp 'kill-region-into-mac-clipboard)
             (kill-region-into-mac-clipboard (point-min) (point-max))
           (kill-region (point-min) (point-max)))))
-    (yank 2)
     (message "%d lines x %d cells" row col)))
 
-(defun paste-table ()
+(defun paste-cli-table ()
   "Insert the table created from killed tab-separated values."
   (interactive)
   (if (fboundp 'yank-from-mac-clipboard)
