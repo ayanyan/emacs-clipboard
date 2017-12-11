@@ -5,23 +5,32 @@
 (defun yank-from-mac-clipboard ()
   "Insert text from the OS clipboard on Mac."
   (interactive)
-  (set-mark (point))
-  (insert (shell-command-to-string "pbpaste")))
+  (let ((command
+         (cond ((equal system-type 'darwin   ) "pbpaste")
+               ((equal system-type 'gnu/linux) "xsel --clipboard"))))
+    (set-mark (point))
+    (insert (shell-command-to-string command))))
 
 (defun kill-region-into-mac-clipboard (from to)
   "The same as `kill-region' except that the killed text is saved
 also in the OS clipboard on Mac even if Emacs runs in Terminal."
   (interactive "r")
-  (shell-command-on-region from to "pbcopy")
-  (kill-region from to))
+  (let ((command
+         (cond ((equal system-type 'darwin   ) "pbcopy")
+               ((equal system-type 'gnu/linux) "xsel --clipboard --input"))))
+    (shell-command-on-region from to command)
+    (kill-region from to)))
 
 (defun copy-region-into-mac-clipboard (from to)
   "The same as `copy-region-as-kill' except that the killed text
 is saved also in the OS clipboard on Mac even if Emacs runs in
 Terminal."
   (interactive "r")
-  (shell-command-on-region from to "pbcopy")
-  (copy-region-as-kill from to))
+  (let ((command
+         (cond ((equal system-type 'darwin   ) "pbcopy")
+               ((equal system-type 'gnu/linux) "xsel --clipboard --input"))))
+    (shell-command-on-region from to command)
+    (copy-region-as-kill from to)))
 
 (global-set-key "\C-c\C-y" 'yank-from-mac-clipboard)
 (global-set-key "\C-c\C-w" 'kill-region-into-mac-clipboard)
