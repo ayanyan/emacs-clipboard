@@ -4,7 +4,8 @@ This software provides some functions reading and writing clipboard in Emacs on 
 
 ## Quick Start
 
-1. Copy the code into your `init.el`.
+1. Copy the code into your `init.el`.  
+Alternatively, put the file appropriately and write `(load "clipboard.el")` in `init.el`.
 
 2. Restart Emacs.
 

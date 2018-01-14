@@ -134,3 +134,18 @@ tab-separated values."
       (goto-char (point-min))
       (while (re-search-forward "[\t]" nil t)
         (replace-match "\t| " t t)))))
+
+;;; Dictionary.app
+
+(defun mac-dict-open-app ()
+  "Apply `browse-url' to the word at point with \"dict:\" protocol.
+By default, Dictionary.app launches on Mac."
+  (interactive)
+  (let ((word
+         (if (use-region-p)
+             (buffer-substring-no-properties (region-beginning) (region-end))
+           (thing-at-point 'word 'noproperty))))
+    (browse-url
+     (concat "dict://" (url-hexify-string word)))))
+
+(global-set-key "\C-cD" 'mac-dict-open-app)
