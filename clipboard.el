@@ -1,40 +1,95 @@
-;;; Just copy the following into your init.el !
+;;; TIPS for Emacs in console, especially on Mac
 
-;;; Emacs in console on Mac
+;;; Copyright (C) 2018 Yoshihiko Kakutani
 
-(defun yank-from-mac-clipboard ()
-  "Insert text from the OS clipboard on Mac."
+;;; Author: Yoshihiko Kakutani <yoshihiko.kakutani@gmail.com>
+
+;;; Copyright Notice:
+
+;; This file is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
+;;
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs; see the file COPYING.  If not, write to
+;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+;; Boston, MA 02111-1307, USA.
+
+;;; Commentary:
+
+;;; Just copy the code into your `init.el'!
+
+;;; handling OS clipboard
+
+(defun yank-from-os-clipboard ()
+  "Insert a text retrieved from the OS clipboard."
   (interactive)
   (let ((command
-         (cond ((equal system-type 'darwin   ) "pbpaste")
-               ((equal system-type 'gnu/linux) "xsel --clipboard"))))
-    (set-mark (point))
-    (insert (shell-command-to-string command))))
+         (cond ((equal system-type 'darwin) "pbpaste")
+               ((equal system-type 'windows-nt) "pwsh -Command Get-Clipboard")
+               (t "xsel --clipboard"))))
+    (when command
+      (set-mark (point))
+      (insert (shell-command-to-string command)))))
 
-(defun kill-region-into-mac-clipboard (from to)
+(defmacro apply-fun-to-region-with-os-clipboard (kill-fun from to)
+  `(let ((command
+          (cond ((not window-system) nil)
+                ((equal system-type 'darwin) "pbcopy")
+                ((equal system-type 'windows-nt) "pwsh -Command Set-Clipboard")
+                (t "xsel --clipboard --input"))))
+     (if (not command)
+         (osc52-send-region-to-terminal ,from ,to)
+       (shell-command-on-region ,from ,to command))
+     (,kill-fun ,from ,to)))
+
+(defun kill-region-into-os-clipboard (from to)
   "The same as `kill-region' except that the killed text is saved
-also in the OS clipboard on Mac even if Emacs runs in Terminal."
+also in the OS clipboard even if Emacs runs in Terminal."
   (interactive "r")
-  (let ((command
-         (cond ((equal system-type 'darwin   ) "pbcopy")
-               ((equal system-type 'gnu/linux) "xsel --clipboard --input"))))
-    (shell-command-on-region from to command)
-    (kill-region from to)))
+  (apply-fun-to-region-with-os-clipboard kill-region from to))
 
-(defun copy-region-into-mac-clipboard (from to)
+(defun copy-region-into-os-clipboard (from to)
   "The same as `copy-region-as-kill' except that the killed text
-is saved also in the OS clipboard on Mac even if Emacs runs in
-Terminal."
+is saved also in the OS clipboard even if Emacs runs in Terminal."
   (interactive "r")
-  (let ((command
-         (cond ((equal system-type 'darwin   ) "pbcopy")
-               ((equal system-type 'gnu/linux) "xsel --clipboard --input"))))
-    (shell-command-on-region from to command)
-    (copy-region-as-kill from to)))
+  (apply-fun-to-region-with-os-clipboard copy-region-as-kill from to))
 
-(global-set-key "\C-c\C-y" 'yank-from-mac-clipboard)
-(global-set-key "\C-c\C-w" 'kill-region-into-mac-clipboard)
-(global-set-key "\C-c\M-w" 'copy-region-into-mac-clipboard)
+(defvar osc52-limit 100000)
+
+(defun osc52-send-string-to-terminal (string)
+  "Send a string to the OS clipboard along the OSC 52 manner.
+If the base64 encoded string is longer than `osc52-limit', it
+will not be sent."
+  (let ((b64-length (* (/ (+ (string-bytes string) 2) 3) 4))
+        (head "\e]52;c;")
+        (tail "\a"))
+    (when (string-match "^screen" (getenv-internal "TERM" initial-environment))
+      (setq head (concat
+                  (if (getenv-internal "TMUX" initial-environment) "\ePtmux;\e" "\eP")
+                  head))
+      (setq tail (concat tail "\e\\")))
+    (if (<= b64-length osc52-limit)
+        (send-string-to-terminal
+         (concat head
+                 (base64-encode-string (encode-coding-string string 'utf-8) t)
+                 tail))
+      (message "Too long to send to clipboard."))))
+
+(defun osc52-send-region-to-terminal (from to)
+  "Send the region to the OS clipboard along the OSC 52 manner."
+  (interactive "r")
+  (osc52-send-string-to-terminal (buffer-substring-no-properties from to)))
+
+(global-set-key "\C-c\C-y" 'yank-from-os-clipboard)
+(global-set-key "\C-c\C-w" 'kill-region-into-os-clipboard)
+(global-set-key "\C-c\M-w" 'copy-region-into-os-clipboard)
 
 ;;; Excel-方眼紙
 
@@ -68,8 +123,8 @@ characters."
             (setq candy 1))
           (forward-char 1))
         (setq col (if (< col candy) candy col))
-        (if (fboundp 'kill-region-into-mac-clipboard)
-            (kill-region-into-mac-clipboard (point-min) (point-max))
+        (if (fboundp 'kill-region-into-os-clipboard)
+            (kill-region-into-os-clipboard (point-min) (point-max))
           (kill-region (point-min) (point-max)))))
     (message "%d lines x %d cells" row col)))
 
@@ -117,16 +172,16 @@ tab-separated values."
             (setq candy 1))
           (forward-char 1))
         (setq col (if (< col candy) candy col))
-        (if (fboundp 'kill-region-into-mac-clipboard)
-            (kill-region-into-mac-clipboard (point-min) (point-max))
+        (if (fboundp 'kill-region-into-os-clipboard)
+            (kill-region-into-os-clipboard (point-min) (point-max))
           (kill-region (point-min) (point-max)))))
     (message "%d lines x %d cells" row col)))
 
 (defun paste-cli-table ()
   "Insert the table created from killed tab-separated values."
   (interactive)
-  (if (fboundp 'yank-from-mac-clipboard)
-      (yank-from-mac-clipboard)
+  (if (fboundp 'yank-from-os-clipboard)
+      (yank-from-os-clipboard)
     (yank))
   (save-excursion
     (save-restriction
