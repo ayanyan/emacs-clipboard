@@ -2,7 +2,7 @@
 
 ;;; Copyright (C) 2018 Yoshihiko Kakutani
 
-;;; Author: Yoshihiko Kakutani <yoshihiko.kakutani@gmail.com>
+;;; Author: Yoshihiko Kakutani
 
 ;;; Copyright Notice:
 
