@@ -59,7 +59,8 @@ also in the OS clipboard even if Emacs runs in Terminal."
   "The same as `copy-region-as-kill' except that the killed text
 is saved also in the OS clipboard even if Emacs runs in Terminal."
   (interactive "r")
-  (apply-fun-to-region-with-os-clipboard copy-region-as-kill from to))
+  (apply-fun-to-region-with-os-clipboard copy-region-as-kill from to)
+  (if (interactive-p) (indicate-copied-region)))
 
 (defvar osc52-limit 100000)
 
