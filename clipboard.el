@@ -23,9 +23,13 @@
 
 ;;; Commentary:
 
-;;; Just copy the code into your `init.el'!
+;; Just load this file from your `init.el'!
+
+;; (load "clipboard.el")
 
 ;;; handling OS clipboard
+
+(defvar use-osc52 t)
 
 (defun yank-from-os-clipboard ()
   "Insert a text retrieved from the OS clipboard."
@@ -38,29 +42,23 @@
       (set-mark (point))
       (insert (shell-command-to-string command)))))
 
-(defmacro apply-fun-to-region-with-os-clipboard (kill-fun from to)
-  `(let ((command
-          (cond ((not window-system) nil)
-                ((equal system-type 'darwin) "pbcopy")
-                ((equal system-type 'windows-nt) "pwsh -Command Set-Clipboard")
-                (t "xsel --clipboard --input"))))
-     (if (not command)
-         (osc52-send-region-to-terminal ,from ,to)
-       (shell-command-on-region ,from ,to command))
-     (,kill-fun ,from ,to)))
-
-(defun kill-region-into-os-clipboard (from to)
-  "The same as `kill-region' except that the killed text is saved
-also in the OS clipboard even if Emacs runs in Terminal."
+(defun send-region-to-os-clipboard (from to)
+  "Send the region to the OS clipboard."
   (interactive "r")
-  (apply-fun-to-region-with-os-clipboard kill-region from to))
+  (let ((command
+         (cond ((equal system-type 'darwin) "pbcopy")
+               ((equal system-type 'windows-nt) "pwsh -Command Set-Clipboard")
+               (t "xsel --clipboard --input"))))
+    (when command
+      (shell-command-on-region from to command))
+    (deactivate-mark)))
 
-(defun copy-region-into-os-clipboard (from to)
-  "The same as `copy-region-as-kill' except that the killed text
-is saved also in the OS clipboard even if Emacs runs in Terminal."
+(defun send-region-to-os-clipboard-somehow (from to)
+  "Send the region to the clipboard in some way."
   (interactive "r")
-  (apply-fun-to-region-with-os-clipboard copy-region-as-kill from to)
-  (if (interactive-p) (indicate-copied-region)))
+  (if (and (not window-system) use-osc52)
+      (osc52-send-region-to-terminal from to)
+    (send-region-to-os-clipboard from to)))
 
 (defvar osc52-limit 100000)
 
@@ -76,21 +74,54 @@ will not be sent."
                   (if (getenv-internal "TMUX" initial-environment) "\ePtmux;\e" "\eP")
                   head))
       (setq tail (concat tail "\e\\")))
-    (if (<= b64-length osc52-limit)
-        (send-string-to-terminal
-         (concat head
-                 (base64-encode-string (encode-coding-string string 'utf-8) t)
-                 tail))
-      (message "Too long to send to clipboard."))))
+    (if (< osc52-limit b64-length)
+        (message "Too long to send to the clipboard.")
+      (message "Sending a string to the clipboard...")
+      (send-string-to-terminal
+       (concat head
+               (base64-encode-string (encode-coding-string string 'utf-8) t)
+               tail)))))
 
 (defun osc52-send-region-to-terminal (from to)
   "Send the region to the OS clipboard along the OSC 52 manner."
   (interactive "r")
-  (osc52-send-string-to-terminal (buffer-substring-no-properties from to)))
+  (osc52-send-string-to-terminal (buffer-substring-no-properties from to))
+  (deactivate-mark))
+
+(defun send-line-to-os-clipboard ()
+  "The current line is sent to the OS clipboard."
+  (interactive)
+  (save-excursion
+    (set-mark (point))
+    (end-of-line)
+    (send-region-to-os-clipboard-somehow (mark) (point)))
+  (message ))
+
+(defun kill-region-into-os-clipboard (from to)
+  "The same as `kill-region' except that the killed text is saved
+also in the OS clipboard even if Emacs runs in Terminal."
+  (interactive "r")
+  (send-region-to-os-clipboard-somehow from to)
+  (kill-region from to))
+
+(defun copy-region-into-os-clipboard (from to)
+  "The same as `copy-region-as-kill' except that the killed text
+is saved also in the OS clipboard even if Emacs runs in Terminal."
+  (interactive "r")
+  (send-region-to-os-clipboard-somehow from to)
+  (copy-region-as-kill from to)
+  (if (interactive-p) (indicate-copied-region)))
+
+(defun kill-line-into-os-clipboard ()
+  "The same as `kill-line' except that the killed text is saved
+also in the OS clipboard even if Emacs runs in Terminal."
+  (interactive)
+  (send-line-to-os-clipboard)
+  (kill-line))
 
 (global-set-key "\C-c\C-y" 'yank-from-os-clipboard)
-(global-set-key "\C-c\C-w" 'kill-region-into-os-clipboard)
-(global-set-key "\C-c\M-w" 'copy-region-into-os-clipboard)
+(global-set-key "\C-c\C-w" 'copy-region-into-os-clipboard)
+(global-set-key "\C-c\C-k" 'send-line-to-os-clipboard)
 
 ;;; Excel-方眼紙
 
