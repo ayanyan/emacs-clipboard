@@ -94,8 +94,7 @@ will not be sent."
   (save-excursion
     (set-mark (point))
     (end-of-line)
-    (send-region-to-os-clipboard-somehow (mark) (point)))
-  (message ))
+    (send-region-to-os-clipboard-somehow (mark) (point))))
 
 (defun kill-region-into-os-clipboard (from to)
   "The same as `kill-region' except that the killed text is saved
