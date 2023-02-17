@@ -29,7 +29,9 @@
 
 ;;; handling OS clipboard
 
-(defvar use-osc52 t)
+(defvar use-osc52 t
+  "If `nil', OSC 52 is never used.  Otherwise, try to use OSC 52
+in a terminal.")
 
 (defun yank-from-os-clipboard ()
   "Insert a text retrieved from the OS clipboard."
