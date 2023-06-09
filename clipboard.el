@@ -90,14 +90,6 @@ will not be sent."
   (osc52-send-string-to-terminal (buffer-substring-no-properties from to))
   (deactivate-mark))
 
-(defun send-line-to-os-clipboard ()
-  "The current line is sent to the OS clipboard."
-  (interactive)
-  (save-excursion
-    (set-mark (point))
-    (end-of-line)
-    (send-region-to-os-clipboard-somehow (mark) (point))))
-
 (defun kill-region-into-os-clipboard (from to)
   "The same as `kill-region' except that the killed text is saved
 also in the OS clipboard even if Emacs runs in Terminal."
@@ -117,12 +109,24 @@ is saved also in the OS clipboard even if Emacs runs in Terminal."
   "The same as `kill-line' except that the killed text is saved
 also in the OS clipboard even if Emacs runs in Terminal."
   (interactive)
-  (send-line-to-os-clipboard)
+  (copy-line-into-os-clipboard)
   (kill-line))
 
+(defun copy-line-into-os-clipboard ()
+  "The current line text after the cursor is sent to the OS
+clipboard."
+  (interactive)
+  (save-excursion
+    (set-mark (point))
+    (end-of-line)
+    (send-region-to-os-clipboard-somehow (mark) (point))))
+
+(global-set-key "\M-\C-y"  'yank-from-os-clipboard)
 (global-set-key "\C-c\C-y" 'yank-from-os-clipboard)
+(global-set-key "\M-\C-w"  'kill-region-into-os-clipboard)
 (global-set-key "\C-c\C-w" 'copy-region-into-os-clipboard)
-(global-set-key "\C-c\C-k" 'send-line-to-os-clipboard)
+(global-set-key "\M-\C-k"  'kill-line-into-os-clipboard)
+(global-set-key "\C-c\C-k" 'copy-line-into-os-clipboard)
 
 ;;; Excel-方眼紙
 
