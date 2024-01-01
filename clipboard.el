@@ -123,10 +123,10 @@ clipboard."
 
 (global-set-key "\M-\C-y"  'yank-from-os-clipboard)
 (global-set-key "\C-c\C-y" 'yank-from-os-clipboard)
-(global-set-key "\M-\C-w"  'kill-region-into-os-clipboard)
-(global-set-key "\C-c\C-w" 'copy-region-into-os-clipboard)
-(global-set-key "\M-\C-k"  'kill-line-into-os-clipboard)
-(global-set-key "\C-c\C-k" 'copy-line-into-os-clipboard)
+(global-set-key "\M-\C-w"  'copy-region-into-os-clipboard)
+(global-set-key "\C-c\C-w" 'kill-region-into-os-clipboard)
+(global-set-key "\M-\C-k"  'copy-line-into-os-clipboard)
+(global-set-key "\C-c\C-k" 'kill-line-into-os-clipboard)
 
 ;;; Excel-方眼紙
 
@@ -165,7 +165,7 @@ characters."
           (kill-region (point-min) (point-max)))))
     (message "%d lines x %d cells" row col)))
 
-(global-set-key "\C-c\M-\C-w" 'kill-region-for-hougansi)
+(global-set-key "\M-\C-xcel" 'kill-region-for-hougansi)
 
 ;;; character-based tables
 
