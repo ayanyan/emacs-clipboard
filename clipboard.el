@@ -27,13 +27,13 @@
 
 ;;; Code:
 
-;;; main
+;;; core library
 
-(defvar use-osc52 t
+(defvar maclip-use-osc52 t
   "If `nil', OSC 52 is never used.  Otherwise, try to use OSC 52
 in a terminal.")
 
-(defun yank-from-os-clipboard ()
+(defun maclip-read-os-clipboard ()
   "Insert a text retrieved from the OS clipboard."
   (interactive)
   (let ((command
@@ -44,7 +44,7 @@ in a terminal.")
       (set-mark (point))
       (insert (shell-command-to-string command)))))
 
-(defun send-region-to-os-clipboard (from to)
+(defun maclip-send-region-to-os-clipboard (from to)
   "Send the region to the OS clipboard."
   (interactive "r")
   (let ((command
@@ -55,18 +55,18 @@ in a terminal.")
       (shell-command-on-region from to command))
     (deactivate-mark)))
 
-(defun send-region-to-os-clipboard-somehow (from to)
+(defun maclip-send-region-to-os-clipboard-somehow (from to)
   "Send the region to the clipboard in some way."
   (interactive "r")
-  (if (and (not window-system) use-osc52)
-      (osc52-send-region-to-terminal from to)
-    (send-region-to-os-clipboard from to)))
+  (if (and (not window-system) maclip-use-osc52)
+      (maclip-osc52-send-region-to-terminal from to)
+    (maclip-send-region-to-os-clipboard from to)))
 
-(defvar osc52-limit 100000)
+(defvar maclip-osc52-limit 100000)
 
-(defun osc52-send-string-to-terminal (string)
+(defun maclip-osc52-send-string-to-terminal (string)
   "Send a string to the OS clipboard along the OSC 52 manner.
-If the base64 encoded string is longer than `osc52-limit', it
+If the base64 encoded string is longer than `maclip-osc52-limit', it
 will not be sent."
   (let ((b64-length (* (/ (+ (string-bytes string) 2) 3) 4))
         (head "\e]52;c;")
@@ -76,7 +76,7 @@ will not be sent."
                   (if (getenv-internal "TMUX" initial-environment) "\ePtmux;\e" "\eP")
                   head))
       (setq tail (concat tail "\e\\")))
-    (if (< osc52-limit b64-length)
+    (if (< maclip-osc52-limit b64-length)
         (message "Too long to send to the clipboard.")
       (message "Sending a string to the clipboard...")
       (send-string-to-terminal
@@ -84,24 +84,28 @@ will not be sent."
                (base64-encode-string (encode-coding-string string 'utf-8) t)
                tail)))))
 
-(defun osc52-send-region-to-terminal (from to)
+(defun maclip-osc52-send-region-to-terminal (from to)
   "Send the region to the OS clipboard along the OSC 52 manner."
   (interactive "r")
-  (osc52-send-string-to-terminal (buffer-substring-no-properties from to))
+  (maclip-osc52-send-string-to-terminal (buffer-substring-no-properties from to))
   (deactivate-mark))
+
+;;; intaractive functions
+
+(defalias 'yank-from-os-clipboard 'maclip-read-os-clipboard)
 
 (defun kill-region-into-os-clipboard (from to)
   "The same as `kill-region' except that the killed text is saved
 also in the OS clipboard even if Emacs runs in Terminal."
   (interactive "r")
-  (send-region-to-os-clipboard-somehow from to)
+  (maclip-send-region-to-os-clipboard-somehow from to)
   (kill-region from to))
 
 (defun copy-region-into-os-clipboard (from to)
   "The same as `copy-region-as-kill' except that the killed text
 is saved also in the OS clipboard even if Emacs runs in Terminal."
   (interactive "r")
-  (send-region-to-os-clipboard-somehow from to)
+  (maclip-send-region-to-os-clipboard-somehow from to)
   (copy-region-as-kill from to)
   (if (interactive-p) (indicate-copied-region)))
 
@@ -119,7 +123,7 @@ clipboard."
   (save-excursion
     (set-mark (point))
     (end-of-line)
-    (send-region-to-os-clipboard-somehow (mark) (point))))
+    (maclip-send-region-to-os-clipboard-somehow (mark) (point))))
 
 (global-set-key "\M-\C-y"  'yank-from-os-clipboard)
 (global-set-key "\C-c\C-y" 'yank-from-os-clipboard)
