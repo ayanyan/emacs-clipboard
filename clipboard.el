@@ -241,3 +241,7 @@ By default, Dictionary.app launches on Mac."
      (concat "dict://" (url-hexify-string word)))))
 
 (global-set-key "\C-cD" 'mac-dict-open-app)
+
+;;; closing
+
+(provide 'clipboard)
