@@ -90,7 +90,7 @@ will not be sent."
   (maclip-osc52-send-string-to-terminal (buffer-substring-no-properties from to))
   (deactivate-mark))
 
-;;; intaractive functions
+;;; utility functions
 
 (defalias 'yank-from-os-clipboard 'maclip-read-os-clipboard)
 
@@ -230,6 +230,25 @@ tab-separated values."
       (goto-char (point-min))
       (while (re-search-forward "[\t]" nil t)
         (replace-match "\t| " t t)))))
+
+;;; others
+(defun reverse-lines (from to)
+  "Reverse the order of contents in the region."
+  (interactive "r")
+  (require 'cl)
+  (save-excursion
+    (save-restriction
+      (narrow-to-region from to)
+      (set-mark from)
+      (goto-char to)
+      (previous-line)
+      (do ((j 99 (- j 1)))
+          ((or (< j 0) (<= (point) (mark))))
+        (kill-region (mark) (point))
+        (next-line)
+        (yank)
+        (previous-line))))
+  (goto-char from))
 
 ;;; Dictionary.app
 
