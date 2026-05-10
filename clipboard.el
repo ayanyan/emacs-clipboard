@@ -64,18 +64,20 @@ in a terminal.")
 
 (defvar maclip-osc52-limit 100000)
 
-(defun maclip-osc52-send-string-to-terminal (string)
+(defun maclip-osc52-send-string-to-terminal (string &optional penetration)
   "Send a string to the OS clipboard along the OSC 52 manner.
 If the base64 encoded string is longer than `maclip-osc52-limit', it
 will not be sent."
   (let ((b64-length (* (/ (+ (string-bytes string) 2) 3) 4))
         (head "\e]52;c;")
         (tail "\a"))
-    (when (string-match "^screen" (getenv-internal "TERM" initial-environment))
-      (setq head (concat
-                  (if (getenv-internal "TMUX" initial-environment) "\ePtmux;\e" "\eP")
-                  head))
-      (setq tail (concat tail "\e\\")))
+    ;; In tmux, when set-clipboard option is on, escaping is not needed.
+    (when penetration
+      (when (string-match "^screen" (getenv-internal "TERM" initial-environment))
+        (setq head (concat
+                    (if (getenv-internal "TMUX" initial-environment) "\ePtmux;\e" "\eP")
+                    head))
+        (setq tail (concat tail "\e\\"))))
     (if (< maclip-osc52-limit b64-length)
         (message "Too long to send to the clipboard.")
       (message "Sending a string to the clipboard...")
